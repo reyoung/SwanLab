@@ -121,7 +121,8 @@ def test_retry_with_custom_env_variables():
         test_url = "https://api.example.com/retry-custom"
         
         # 添加3次失败的响应和1次成功的响应
-        [responses.add(responses.GET, test_url, body="Error", status=500) for _ in range(3)]
+        for _ in range(3):
+            responses.add(responses.GET, test_url, body="Error", status=500)
         responses.add(responses.GET, test_url, body="Success", status=200)
         
         # 创建会话并请求
@@ -161,7 +162,8 @@ def test_retry_default_values_without_env():
         test_url = "https://api.example.com/retry-default"
         
         # 添加5次失败的响应和1次成功的响应
-        [responses.add(responses.GET, test_url, body="Error", status=500) for _ in range(5)]
+        for _ in range(5):
+            responses.add(responses.GET, test_url, body="Error", status=500)
         responses.add(responses.GET, test_url, body="Success", status=200)
         
         # 创建会话并请求
@@ -201,7 +203,8 @@ def test_retry_invalid_env_values_fallback_to_defaults():
         test_url = "https://api.example.com/retry-invalid"
         
         # 添加5次失败的响应和1次成功的响应（应该使用默认的5次重试）
-        [responses.add(responses.GET, test_url, body="Error", status=500) for _ in range(5)]
+        for _ in range(5):
+            responses.add(responses.GET, test_url, body="Error", status=500)
         responses.add(responses.GET, test_url, body="Success", status=200)
         
         # 创建会话并请求

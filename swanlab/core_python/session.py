@@ -13,6 +13,10 @@ from urllib3.util.retry import Retry
 from swanlab.env import SwanLabEnv
 from swanlab.package import get_package_version
 
+# 默认的重试配置
+DEFAULT_RETRY_TOTAL = 5
+DEFAULT_RETRY_BACKOFF_FACTOR = 0.5
+
 
 def create_session() -> requests.Session:
     """
@@ -22,18 +26,18 @@ def create_session() -> requests.Session:
     """
     # 从环境变量读取重试配置，如果未设置或无效则使用默认值
     try:
-        retry_total = int(os.getenv(SwanLabEnv.RETRY_TOTAL.value, "5"))
+        retry_total = int(os.getenv(SwanLabEnv.RETRY_TOTAL.value, str(DEFAULT_RETRY_TOTAL)))
         if retry_total < 0:
-            retry_total = 5
+            retry_total = DEFAULT_RETRY_TOTAL
     except (ValueError, TypeError):
-        retry_total = 5
+        retry_total = DEFAULT_RETRY_TOTAL
     
     try:
-        retry_backoff_factor = float(os.getenv(SwanLabEnv.RETRY_BACKOFF_FACTOR.value, "0.5"))
+        retry_backoff_factor = float(os.getenv(SwanLabEnv.RETRY_BACKOFF_FACTOR.value, str(DEFAULT_RETRY_BACKOFF_FACTOR)))
         if retry_backoff_factor < 0:
-            retry_backoff_factor = 0.5
+            retry_backoff_factor = DEFAULT_RETRY_BACKOFF_FACTOR
     except (ValueError, TypeError):
-        retry_backoff_factor = 0.5
+        retry_backoff_factor = DEFAULT_RETRY_BACKOFF_FACTOR
     
     session = requests.Session()
     retry = Retry(
