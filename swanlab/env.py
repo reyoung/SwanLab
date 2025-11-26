@@ -133,6 +133,14 @@ class SwanLabEnv(enum.Enum):
     """
     禁用Git功能，设置为true时不会采集Git信息
     """
+    RETRY_TOTAL = "SWANLAB_RETRY_TOTAL"
+    """
+    HTTP请求重试总次数，默认为5次
+    """
+    RETRY_BACKOFF_FACTOR = "SWANLAB_RETRY_BACKOFF_FACTOR"
+    """
+    HTTP请求重试的backoff因子，默认为0.5
+    """
 
     @staticmethod
     def is_hostname(value: str) -> bool:
