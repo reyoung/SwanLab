@@ -20,9 +20,20 @@ def create_session() -> requests.Session:
     重试次数和backoff因子可以通过环境变量SWANLAB_RETRY_TOTAL和SWANLAB_RETRY_BACKOFF_FACTOR设置
     :return: requests.Session
     """
-    # 从环境变量读取重试配置，如果未设置则使用默认值
-    retry_total = int(os.getenv(SwanLabEnv.RETRY_TOTAL.value, "5"))
-    retry_backoff_factor = float(os.getenv(SwanLabEnv.RETRY_BACKOFF_FACTOR.value, "0.5"))
+    # 从环境变量读取重试配置，如果未设置或无效则使用默认值
+    try:
+        retry_total = int(os.getenv(SwanLabEnv.RETRY_TOTAL.value, "5"))
+        if retry_total < 0:
+            retry_total = 5
+    except (ValueError, TypeError):
+        retry_total = 5
+    
+    try:
+        retry_backoff_factor = float(os.getenv(SwanLabEnv.RETRY_BACKOFF_FACTOR.value, "0.5"))
+        if retry_backoff_factor < 0:
+            retry_backoff_factor = 0.5
+    except (ValueError, TypeError):
+        retry_backoff_factor = 0.5
     
     session = requests.Session()
     retry = Retry(

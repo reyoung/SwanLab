@@ -109,11 +109,15 @@ def test_retry_with_custom_env_variables():
     """
     测试通过环境变量设置重试次数和backoff因子
     """
-    # 设置环境变量
-    os.environ["SWANLAB_RETRY_TOTAL"] = "3"
-    os.environ["SWANLAB_RETRY_BACKOFF_FACTOR"] = "1.0"
+    # 保存原有环境变量值
+    original_retry_total = os.environ.get("SWANLAB_RETRY_TOTAL")
+    original_retry_backoff = os.environ.get("SWANLAB_RETRY_BACKOFF_FACTOR")
     
     try:
+        # 设置环境变量
+        os.environ["SWANLAB_RETRY_TOTAL"] = "3"
+        os.environ["SWANLAB_RETRY_BACKOFF_FACTOR"] = "1.0"
+        
         test_url = "https://api.example.com/retry-custom"
         
         # 添加3次失败的响应和1次成功的响应
@@ -128,9 +132,16 @@ def test_retry_with_custom_env_variables():
         assert resp.text == "Success"
         assert len(responses.calls) == 4
     finally:
-        # 清理环境变量
-        os.environ.pop("SWANLAB_RETRY_TOTAL", None)
-        os.environ.pop("SWANLAB_RETRY_BACKOFF_FACTOR", None)
+        # 恢复原有环境变量值
+        if original_retry_total is None:
+            os.environ.pop("SWANLAB_RETRY_TOTAL", None)
+        else:
+            os.environ["SWANLAB_RETRY_TOTAL"] = original_retry_total
+        
+        if original_retry_backoff is None:
+            os.environ.pop("SWANLAB_RETRY_BACKOFF_FACTOR", None)
+        else:
+            os.environ["SWANLAB_RETRY_BACKOFF_FACTOR"] = original_retry_backoff
 
 
 @responses.activate(registry=registries.OrderedRegistry)
@@ -138,20 +149,76 @@ def test_retry_default_values_without_env():
     """
     测试未设置环境变量时使用默认值（5次重试）
     """
-    # 确保环境变量不存在
-    os.environ.pop("SWANLAB_RETRY_TOTAL", None)
-    os.environ.pop("SWANLAB_RETRY_BACKOFF_FACTOR", None)
+    # 保存原有环境变量值
+    original_retry_total = os.environ.get("SWANLAB_RETRY_TOTAL")
+    original_retry_backoff = os.environ.get("SWANLAB_RETRY_BACKOFF_FACTOR")
     
-    test_url = "https://api.example.com/retry-default"
+    try:
+        # 确保环境变量不存在
+        os.environ.pop("SWANLAB_RETRY_TOTAL", None)
+        os.environ.pop("SWANLAB_RETRY_BACKOFF_FACTOR", None)
+        
+        test_url = "https://api.example.com/retry-default"
+        
+        # 添加5次失败的响应和1次成功的响应
+        [responses.add(responses.GET, test_url, body="Error", status=500) for _ in range(5)]
+        responses.add(responses.GET, test_url, body="Success", status=200)
+        
+        # 创建会话并请求
+        s = create_session()
+        resp = s.get(test_url)
+        
+        # 验证默认重试次数（5次失败 + 1次成功 = 6次调用）
+        assert resp.text == "Success"
+        assert len(responses.calls) == 6
+    finally:
+        # 恢复原有环境变量值
+        if original_retry_total is None:
+            os.environ.pop("SWANLAB_RETRY_TOTAL", None)
+        else:
+            os.environ["SWANLAB_RETRY_TOTAL"] = original_retry_total
+        
+        if original_retry_backoff is None:
+            os.environ.pop("SWANLAB_RETRY_BACKOFF_FACTOR", None)
+        else:
+            os.environ["SWANLAB_RETRY_BACKOFF_FACTOR"] = original_retry_backoff
+
+
+@responses.activate(registry=registries.OrderedRegistry)
+def test_retry_invalid_env_values_fallback_to_defaults():
+    """
+    测试当环境变量值无效时，使用默认值
+    """
+    # 保存原有环境变量值
+    original_retry_total = os.environ.get("SWANLAB_RETRY_TOTAL")
+    original_retry_backoff = os.environ.get("SWANLAB_RETRY_BACKOFF_FACTOR")
     
-    # 添加5次失败的响应和1次成功的响应
-    [responses.add(responses.GET, test_url, body="Error", status=500) for _ in range(5)]
-    responses.add(responses.GET, test_url, body="Success", status=200)
-    
-    # 创建会话并请求
-    s = create_session()
-    resp = s.get(test_url)
-    
-    # 验证默认重试次数（5次失败 + 1次成功 = 6次调用）
-    assert resp.text == "Success"
-    assert len(responses.calls) == 6
+    try:
+        # 设置无效的环境变量值
+        os.environ["SWANLAB_RETRY_TOTAL"] = "invalid"
+        os.environ["SWANLAB_RETRY_BACKOFF_FACTOR"] = "not_a_number"
+        
+        test_url = "https://api.example.com/retry-invalid"
+        
+        # 添加5次失败的响应和1次成功的响应（应该使用默认的5次重试）
+        [responses.add(responses.GET, test_url, body="Error", status=500) for _ in range(5)]
+        responses.add(responses.GET, test_url, body="Success", status=200)
+        
+        # 创建会话并请求
+        s = create_session()
+        resp = s.get(test_url)
+        
+        # 验证使用了默认重试次数（5次失败 + 1次成功 = 6次调用）
+        assert resp.text == "Success"
+        assert len(responses.calls) == 6
+    finally:
+        # 恢复原有环境变量值
+        if original_retry_total is None:
+            os.environ.pop("SWANLAB_RETRY_TOTAL", None)
+        else:
+            os.environ["SWANLAB_RETRY_TOTAL"] = original_retry_total
+        
+        if original_retry_backoff is None:
+            os.environ.pop("SWANLAB_RETRY_BACKOFF_FACTOR", None)
+        else:
+            os.environ["SWANLAB_RETRY_BACKOFF_FACTOR"] = original_retry_backoff
